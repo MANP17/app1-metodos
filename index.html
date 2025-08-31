@@ -1,6 +1,4 @@
 <!--APLICACIÓN #1 - MÉTODOS NUMÉRICOS-->
-<!--MIGUEL ANGEL NARVAEZ PORTILLA-->
-<!--DARWIN DAVID MUÑOZ BENAVIDES-->
 
 <!DOCTYPE html>
 <html lang="es">
@@ -60,7 +58,7 @@
     }
 
     #input-container input {
-        flex-basis: 300px;
+        flex-basis: 350px;
     }
 
     #input-container p {
@@ -98,6 +96,12 @@
         background-color: rgb(158, 206, 106, .9);
         color: #0f0f17;
     }
+
+    #parse-msg {
+        color: #ff8b8b;
+        font-size: 16px;
+        text-align: center;
+    }
 </style>
 
 <body>
@@ -105,11 +109,12 @@
         <p style="text-align: center;">Aplicación 1 - Métodos Numéricos</p>
         <p style="text-align: center;">Miguel Angel Narvaez Portilla - Darwin David Muñoz Benavides</p>
         <div id="input-container">
-            <input type="text" id="x" placeholder="Valor de X" value="0" />
+            <input type="text" id="x" placeholder="Valor de X (ej: pi, 3pi/2, 2.5, -pi/4)" value="0" />
             <input type="text" id="cifrasSignificativas" placeholder="Cantidad de cifras significativas" min="1"
                 value="0" />
             <p>Error: <span id="result"></span></p>
         </div>
+        <p id="parse-msg"></p>
         <div id="table-container">
             <div class="single-table-container">
                 <p>Seno</p>
@@ -151,56 +156,81 @@
         window.onload = () => {
             x.value = "";
             cifrasSignificativas.value = "";
+            parseMsg.textContent = "";
             p.textContent = "";
         };
         const x = document.getElementById("x");
         const cifrasSignificativas = document.getElementById("cifrasSignificativas")
         const p = document.getElementById("result");
+        const parseMsg = document.getElementById("parse-msg");
         let error = 0
+        const parseExpression = (expr) => {
+            if (!expr) return NaN;
+            let s = String(expr).toLowerCase();
+            s = s.replace(/π/g, 'pi');
+
+            s = s.replace(/\s+/g, '');
+
+            if (!/^[0-9+\-*/().pi]+$/.test(s)) return NaN;
+
+            s = s.replace(/(\d|\))(?=pi|\()/g, '$1*');
+
+            s = s.replace(/pi(?=\d|\()/g, 'pi*');
+
+            s = s.replace(/pi/g, 'Math.PI');
+
+            try {
+                const val = Function('"use strict"; return (' + s + ')')();
+                return Number(val);
+            } catch (e) {
+                return NaN;
+            }
+        }
 
         x.addEventListener("input", () => {
+            let raw = x.value;
+            raw = raw.replace(/π/g, 'pi');
+            raw = raw.replace(/[^0-9+\-*/().pi\sπPI]/gi, '');
+            x.value = raw;
 
-            let value = x.value.replace(/[^0-9.-]/g, '');
-            if (value == '') {
-                limpiarTabla(true)
-                limpiarTabla(false)
-            }
-            if ((value.match(/-/g) || []).length > 1) {
-                value = value.replace(/(?!^)-/g, '');
-            }
-
-            if ((value.match(/\./g) || []).length > 1) {
-                value = value.replace(/\.(?=.*\.)/g, '');
+            const numeric = parseExpression(raw);
+            if (isNaN(numeric)) {
+                parseMsg.textContent = raw.trim() === '' ? '' : 'Expresión inválida';
+                limpiarTabla(true);
+                limpiarTabla(false);
+                return;
+            } else {
+                parseMsg.textContent = '';
             }
 
-            x.value = value;
-            calcularSeno()
-            calcularCoseno()
+            calcularSeno();
+            calcularCoseno();
         });
 
         cifrasSignificativas.addEventListener("input", () => {
             let value = cifrasSignificativas.value.replace(/\D/g, '');
+
             if (value === '') {
                 p.textContent = '';
                 cifrasSignificativas.value = '';
-                limpiarTabla(true)
-                limpiarTabla(false)
-                return;
-            }
-            value = value.replace(/^0+/, '');
-
-            if (value === '') {
-                cifrasSignificativas.value = '';
+                limpiarTabla(true);
+                limpiarTabla(false);
                 return;
             }
 
             let number = parseInt(value, 10);
 
-            if (number < 1) number = 1;
-            calcularError()
-            calcularSeno()
-            calcularCoseno()
+            if (isNaN(number) || number < 1) {
+                number = 1;
+            }
+
+            cifrasSignificativas.value = number;
+
+            calcularError();
+            calcularSeno();
+            calcularCoseno();
         });
+
 
         const factorial = (n) => {
             if (n < 0) return undefined;
@@ -213,7 +243,6 @@
 
         const calcularError = () => {
             if (cifrasSignificativas.value) {
-                console.log(cifrasSignificativas.value)
                 let cs = Number(cifrasSignificativas.value)
                 error = Math.abs((0.5 * Math.pow(10, (2 - cs))))
                 p.textContent = `${error}%`
@@ -250,8 +279,15 @@
             tabla.appendChild(fila)
         }
 
+        const obtenerXNumerico = () => {
+            const val = x.value;
+            const numeric = parseExpression(val);
+            return numeric;
+        }
+
         const calcularSeno = () => {
-            if (cifrasSignificativas.value && x.value) {
+            const numericX = obtenerXNumerico();
+            if (cifrasSignificativas.value && !isNaN(numericX)) {
                 let errorActual = 100;
                 let iterador = 0;
                 let serie = 0;
@@ -259,36 +295,44 @@
 
                 limpiarTabla(true)
                 while (errorActual >= error) {
-                    let resultado = (Math.pow(-1, iterador) / factorial(2 * iterador + 1)) * Math.pow(x.value, 2 * iterador + 1);
+                    let resultado = (Math.pow(-1, iterador) / factorial(2 * iterador + 1)) * Math.pow(numericX, 2 * iterador + 1);
                     serie += resultado;
 
-                    errorActual = Math.abs((serie - serieAnterior) / serie) * 100;
+                    errorActual = iterador === 0 ? 100 : Math.abs((serie - serieAnterior) / serie) * 100;
                     serieAnterior = serie;
                     agregarFila(true, (errorActual < error), iterador, resultado, serie, errorActual);
                     iterador++;
+                    // prevención: si factorial devuelve undefined o se vuelve infinito, cortar
+                    if (!isFinite(serie) || resultado === undefined) break;
                 }
                 return serie;
+            } else {
+                limpiarTabla(true);
             }
         }
 
         const calcularCoseno = () => {
-            if (cifrasSignificativas.value && x.value) {
+            const numericX = obtenerXNumerico();
+            if (cifrasSignificativas.value && !isNaN(numericX)) {
                 let errorActual = 100;
                 let iterador = 0;
                 let serie = 0;
                 let serieAnterior = 0;
 
                 limpiarTabla(false)
-                while (errorActual >= error) {
-                    let resultado = (Math.pow(-1, iterador) / factorial(2 * iterador)) * Math.pow(Number(x.value), 2 * iterador);
+                while (errorActual >= error && iterador < 50) {
+                    let resultado = (Math.pow(-1, iterador) / factorial(2 * iterador)) * Math.pow(numericX, 2 * iterador);
                     serie += resultado;
 
-                    errorActual = Math.abs((serie - serieAnterior) / serie) * 100;
+                    errorActual = iterador === 0 ? 100 : Math.abs((serie - serieAnterior) / serie) * 100;
                     serieAnterior = serie;
                     agregarFila(false, (errorActual < error), iterador, resultado, serie, errorActual);
                     iterador++;
+                    if (!isFinite(serie) || resultado === undefined) break;
                 }
                 return serie;
+            } else {
+                limpiarTabla(false);
             }
         }
 
