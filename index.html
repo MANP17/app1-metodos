@@ -159,8 +159,12 @@
         let error = 0
 
         x.addEventListener("input", () => {
-            let value = x.value.replace(/[^0-9.-]/g, '');
 
+            let value = x.value.replace(/[^0-9.-]/g, '');
+            if (value == '') {
+                limpiarTabla(true)
+                limpiarTabla(false)
+            }
             if ((value.match(/-/g) || []).length > 1) {
                 value = value.replace(/(?!^)-/g, '');
             }
@@ -179,6 +183,8 @@
             if (value === '') {
                 p.textContent = '';
                 cifrasSignificativas.value = '';
+                limpiarTabla(true)
+                limpiarTabla(false)
                 return;
             }
             value = value.replace(/^0+/, '');
