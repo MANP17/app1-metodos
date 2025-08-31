@@ -1,0 +1,291 @@
+<!--APLICACIÓN #1 - MÉTODOS NUMÉRICOS-->
+<!--MIGUEL ANGEL NARVAEZ PORTILLA-->
+<!--DARWIN DAVID MUÑOZ BENAVIDES-->
+
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seno y Coseno</title>
+</head>
+
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-size: 20px;
+        font-family: Arial, sans-serif;
+    }
+
+    body {
+        background-color: #0f0f17;
+        color: #f5f5f7;
+    }
+
+    p {
+        color: #bb9af7;
+    }
+
+    table {
+        border: 2px solid white;
+        border-radius: 10px;
+    }
+
+    input {
+        padding: 3px;
+        border-radius: 10px;
+    }
+
+    td {
+        padding: 5px;
+    }
+
+    #main-container {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        padding: 20px;
+    }
+
+    #input-container {
+        display: flex;
+        justify-content: space-around;
+        flex-direction: row;
+        padding: 20px;
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+
+    #input-container input {
+        flex-basis: 300px;
+    }
+
+    #input-container p {
+        flex-basis: 300px;
+        text-align: center;
+    }
+
+    #table-container {
+        display: flex;
+        justify-content: space-around;
+        padding: 20px;
+        flex-wrap: wrap;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    #table-container p {
+        text-align: center;
+    }
+
+    #table-container table {
+        flex-shrink: 1;
+        min-width: 300px;
+    }
+
+
+    .single-table-container {
+        display: flex;
+        justify-content: center;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .fila-pasado {
+        background-color: rgb(158, 206, 106, .9);
+        color: #0f0f17;
+    }
+</style>
+
+<body>
+    <div id="main-container">
+        <p style="text-align: center;">Miguel Angel Narvaez Portilla - Darwin David Muñoz Benavides</p>
+        <div id="input-container">
+            <input type="text" id="x" placeholder="Valor de X" value="0" />
+            <input type="text" id="cifrasSignificativas" placeholder="Cantidad de cifras significativas" min="1"
+                value="0" />
+            <p>Error: <span id="result"></span></p>
+        </div>
+        <div id="table-container">
+            <div class="single-table-container">
+                <p>Seno</p>
+                <table id="tablaSeno" border="1">
+                    <thead>
+                        <tr>
+                            <td>Término</td>
+                            <td>Resultado</td>
+                            <td>Serie</td>
+                            <td>Error</td>
+                        </tr>
+                    </thead>
+                    <tbody>
+
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="single-table-container">
+                <p>Coseno</p>
+                <table id="tablaCoseno" border="1">
+                    <thead>
+                        <tr>
+                            <td>Término</td>
+                            <td>Resultado</td>
+                            <td>Serie</td>
+                            <td>Error</td>
+                        </tr>
+                    </thead>
+                    <tbody>
+
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        window.onload = () => {
+            x.value = "";
+            cifrasSignificativas.value = "";
+            p.textContent = "";
+        };
+        const x = document.getElementById("x");
+        const cifrasSignificativas = document.getElementById("cifrasSignificativas")
+        const p = document.getElementById("result");
+        let error = 0
+
+        x.addEventListener("input", () => {
+            let value = x.value.replace(/[^0-9.-]/g, '');
+
+            if ((value.match(/-/g) || []).length > 1) {
+                value = value.replace(/(?!^)-/g, '');
+            }
+
+            if ((value.match(/\./g) || []).length > 1) {
+                value = value.replace(/\.(?=.*\.)/g, '');
+            }
+
+            x.value = value;
+            calcularSeno()
+            calcularCoseno()
+        });
+
+        cifrasSignificativas.addEventListener("input", () => {
+            let value = cifrasSignificativas.value.replace(/\D/g, '');
+            if (value === '') {
+                p.textContent = '';
+                cifrasSignificativas.value = '';
+                return;
+            }
+            value = value.replace(/^0+/, '');
+
+            if (value === '') {
+                cifrasSignificativas.value = '';
+                return;
+            }
+
+            let number = parseInt(value, 10);
+
+            if (number < 1) number = 1;
+            calcularError()
+            calcularSeno()
+            calcularCoseno()
+        });
+
+        const factorial = (n) => {
+            if (n < 0) return undefined;
+            let result = 1;
+            for (let i = 1; i <= n; i++) {
+                result *= i;
+            }
+            return result;
+        }
+
+        const calcularError = () => {
+            if (cifrasSignificativas.value) {
+                console.log(cifrasSignificativas.value)
+                let cs = Number(cifrasSignificativas.value)
+                error = Math.abs((0.5 * Math.pow(10, (2 - cs))))
+                p.textContent = `${error}%`
+            }
+        }
+
+        const limpiarTabla = (seno) => {
+            const tabla = document.getElementById(seno ? "tablaSeno" : "tablaCoseno").querySelector("tbody");
+            tabla.innerHTML = ""
+        }
+
+        const agregarFila = (seno, errorPasado, termino, resultado, serie, error) => {
+            const tabla = document.getElementById(seno ? "tablaSeno" : "tablaCoseno").querySelector("tbody");
+            const fila = document.createElement("tr")
+            if (errorPasado) {
+                fila.classList.add("fila-pasado")
+            }
+            const celdaTermino = document.createElement("td")
+            celdaTermino.textContent = termino
+
+            const celdaResultado = document.createElement("td")
+            celdaResultado.textContent = resultado
+
+            const celdaSerie = document.createElement("td")
+            celdaSerie.textContent = serie
+
+            const celdaError = document.createElement("td")
+            celdaError.textContent = error
+
+            fila.appendChild(celdaTermino)
+            fila.appendChild(celdaResultado)
+            fila.appendChild(celdaSerie)
+            fila.appendChild(celdaError)
+            tabla.appendChild(fila)
+        }
+
+        const calcularSeno = () => {
+            if (cifrasSignificativas.value && x.value) {
+                let errorActual = 100;
+                let iterador = 0;
+                let serie = 0;
+                let serieAnterior = 0;
+
+                limpiarTabla(true)
+                while (errorActual >= error) {
+                    let resultado = (Math.pow(-1, iterador) / factorial(2 * iterador + 1)) * Math.pow(x.value, 2 * iterador + 1);
+                    serie += resultado;
+
+                    errorActual = Math.abs((serie - serieAnterior) / serie) * 100;
+                    serieAnterior = serie;
+                    agregarFila(true, (errorActual < error), iterador, resultado, serie, errorActual);
+                    iterador++;
+                }
+                return serie;
+            }
+        }
+
+        const calcularCoseno = () => {
+            if (cifrasSignificativas.value && x.value) {
+                let errorActual = 100;
+                let iterador = 0;
+                let serie = 0;
+                let serieAnterior = 0;
+
+                limpiarTabla(false)
+                while (errorActual >= error) {
+                    let resultado = (Math.pow(-1, iterador) / factorial(2 * iterador)) * Math.pow(Number(x.value), 2 * iterador);
+                    serie += resultado;
+
+                    errorActual = Math.abs((serie - serieAnterior) / serie) * 100;
+                    serieAnterior = serie;
+                    agregarFila(false, (errorActual < error), iterador, resultado, serie, errorActual);
+                    iterador++;
+                }
+                return serie;
+            }
+        }
+
+    </script>
+</body>
+
+</html>
